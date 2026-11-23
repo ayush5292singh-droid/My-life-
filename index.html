@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOCUSFLOW | Study Timer</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#080d19;--panel:#111b2e;--text:#f2f6ff;
+  --muted:#91a0b8;--accent:#65e6c4;--purple:#9a83ff;
+}
+body{
+ margin:0;min-height:100vh;color:var(--text);
+ background:radial-gradient(circle at 50% 0%,#172b46,#080d19 65%);
+ font-family:Inter,system-ui,sans-serif;
+ display:flex;justify-content:center;align-items:center;
+ padding:22px;
+}
+.app{width:100%;max-width:520px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.logo{font-size:21px;font-weight:900;letter-spacing:2px}
+.logo span{color:var(--accent)}
+.tag{font-size:11px;color:var(--accent);border:1px solid #315b59;padding:7px 10px;border-radius:20px}
+.card{
+ background:rgba(17,27,46,.92);border:1px solid #26354c;
+ border-radius:25px;padding:25px;text-align:center;
+ box-shadow:0 20px 65px #0006;
+}
+.modes{display:flex;background:#091321;padding:5px;border-radius:14px;gap:5px}
+.modes button{
+ flex:1;border:0;background:transparent;color:var(--muted);
+ padding:12px 5px;border-radius:10px;cursor:pointer;font-weight:700
+}
+.modes button.active{background:#243b50;color:var(--accent)}
+.label{margin-top:27px;color:var(--muted);font-size:12px;letter-spacing:3px}
+.timer{
+ width:260px;height:260px;margin:20px auto;
+ position:relative;display:grid;place-items:center
+}
+svg{position:absolute;width:100%;height:100%;transform:rotate(-90deg)}
+.track,.progress{fill:none;stroke-width:8}
+.track{stroke:#29374b}
+.progress{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .5s}
+.time{font-size:62px;font-weight:800;letter-spacing:-3px}
+.status{font-size:13px;color:var(--muted);margin-top:5px}
+.actions{display:flex;gap:12px;justify-content:center;margin-top:15px}
+.action{
+ border:0;border-radius:13px;padding:15px 25px;
+ font-weight:800;cursor:pointer;font-size:14px
+}
+.primary{background:var(--accent);color:#071b19;min-width:150px}
+.secondary{background:#24344b;color:white}
+button:active{transform:scale(.97)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}
+.stat{background:#0b1526;padding:15px 5px;border-radius:14px}
+.stat strong{display:block;font-size:23px}
+.stat small{color:var(--muted);font-size:10px}
+.quote{color:#b4c2d7;font-size:13px;line-height:1.6;margin-top:23px;min-height:22px}
+.settings{margin-top:18px;text-align:left}
+details{background:#0b1526;padding:15px;border-radius:13px}
+summary{cursor:pointer;font-weight:700;font-size:13px}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.inputs label{font-size:12px;color:var(--muted)}
+input{width:100%;margin-top:7px;padding:11px;background:#17243a;color:white;border:1px solid #34445e;border-radius:9px}
+footer{text-align:center;color:#64748b;font-size:11px;margin-top:18px}
+@media(max-width:380px){.timer{width:225px;height:225px}.time{font-size:52px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+ <div class="logo">FOCUS<span>FLOW</span></div>
+ <div class="tag">YOUR STUDY SPACE</div>
+</header>
+
+<div class="card">
+ <div class="modes">
+  <button class="active" id="focusTab" onclick="setMode('focus')">FOCUS</button>
+  <button id="breakTab" onclick="setMode('break')">SHORT BREAK</button>
+  <button id="longTab" onclick="setMode('long')">LONG BREAK</button>
+ </div>
+
+ <div class="label" id="modeLabel">TIME TO FOCUS</div>
+
+ <div class="timer">
+  <svg viewBox="0 0 260 260">
+   <circle class="track" cx="130" cy="130" r="116"/>
+   <circle class="progress" id="progress" cx="130" cy="130" r="116"
+    stroke-dasharray="728.85" stroke-dashoffset="0"/>
+  </svg>
+  <div>
+   <div class="time" id="clock">25:00</div>
+   <div class="status" id="status">Ready when you are.</div>
+  </div>
+ </div>
+
+ <div class="actions">
+  <button class="action primary" id="startBtn" onclick="toggle()">START FOCUS</button>
+  <button class="action secondary" onclick="reset()">↻ RESET</button>
+ </div>
+
+ <div class="stats">
+  <div class="stat"><strong id="sessions">0</strong><small>SESSIONS</small></div>
+  <div class="stat"><strong id="streak">0</strong><small>FOCUS STREAK</small></div>
+  <div class="stat"><strong id="total">0</strong><small>FOCUS MIN</small></div>
+ </div>
+
+ <div class="quote" id="quote">Small steps every day create extraordinary results.</div>
+
+ <div class="settings">
+  <details>
+   <summary>⚙ CUSTOMIZE TIMER</summary>
+   <div class="inputs">
+    <label>Focus minutes<input id="focusInput" type="number" min="1" max="180" value="25"></label>
+    <label>Short break<input id="breakInput" type="number" min="1" max="60" value="5"></label>
+    <label>Long break<input id="longInput" type="number" min="1" max="90" value="15"></label>
+   </div>
+   <button class="action secondary" style="width:100%;margin-top:12px" onclick="saveSettings()">SAVE SETTINGS</button>
+  </details>
+ </div>
+</div>
+<footer>FOCUSFLOW • ONE SESSION AT A TIME</footer>
+</div>
+
+<script>
+const C=2*Math.PI*116;
+let mode="focus",remaining=1500,totalTime=1500;
+let running=false,interval=null,sessions=0,totalMinutes=0;
+let streak=0,audio=null;
+
+const $=id=>document.getElementById(id);
+const durations=()=>({
+ focus:Math.max(1,Math.min(180,Number($("focusInput").value)||25))*60,
+ break:Math.max(1,Math.min(60,Number($("breakInput").value)||5))*60,
+ long:Math.max(1,Math.min(90,Number($("longInput").value)||15))*60
+});
+
+function beep(){
+ try{
+  audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+  if(audio.state==="suspended")audio.resume();
+  [0,.22,.44].forEach((delay,i)=>{
+   const o=audio.createOscillator(),g=audio.createGain();
+   o.connect(g);g.connect(audio.destination);
+   o.frequency.value=[660,790,990][i];
+   g.gain.setValueAtTime(.001,audio.currentTime+delay);
+   g.gain.exponentialRampToValueAtTime(.16,audio.currentTime+delay+.02);
+   g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+delay+.17);
+   o.start(audio.currentTime+delay);o.stop(audio.currentTime+delay+.18);
+  });
+ }catch(e){}
+}
+
+function setMode(m){
+ stop();
+ mode=m;
+ remaining=durations()[m];
+ totalTime=remaining;
+ update();
+}
+function stop(){
+ running=false;
+ clearInterval(interval);
+ interval=null;
+ $("startBtn").textContent="START "+(mode==="focus"?"FOCUS":"BREAK");
+}
+function toggle(){
+ if(running){stop();$("status").textContent="Paused. Take your time.";return}
+ if(remaining<=0)reset();
+ running=true;
+ $("startBtn").textContent="PAUSE";
+ $("status").textContent="Stay focused. You've got this!";
+ const end=Date.now()+remaining*1000;
+ interval=setInterval(()=>{
+  remaining=Math.max(0,Math.ceil((end-Date.now())/1000));
+  update();
+  if(remaining<=0)complete();
+ },200);
+}
+function complete(){
+ stop();beep();
+ if(mode==="focus"){
+  sessions++;streak++;
+  totalMinutes+=totalTime/60;
+  $("quote").textContent="Excellent work! Every focused session counts.";
+  setMode(sessions%4===0?"long":"break");
+  $("status").textContent="Focus complete. Enjoy your break!";
+ }else{
+  streak=0;
+  $("quote").textContent="Break finished. Ready for another round?";
+  setMode("focus");
+  $("status").textContent="Your next focus session is ready.";
+ }
+ $("sessions").textContent=sessions;
+ $("streak").textContent=streak;
+ $("total").textContent=totalMinutes;
+}
+function reset(){
+ stop();remaining=durations()[mode];totalTime=remaining;
+ $("status").textContent="Timer reset. Ready?";
+ update();
+}
+function saveSettings(){
+ stop();
+ remaining=durations()[mode];totalTime=remaining;
+ update();
+ alert("Timer settings saved!");
+}
+function update(){
+ let min=Math.floor(remaining/60),sec=remaining%60;
+ $("clock").textContent=String(min).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+ $("progress").style.strokeDasharray=C;
+ $("progress").style.strokeDashoffset=C*(1-remaining/totalTime);
+ $("modeLabel").textContent=mode==="focus"?"TIME TO FOCUS":mode==="break"?"TAKE A BREATHER":"RECHARGE TIME";
+ $("focusTab").classList.toggle("active",mode==="focus");
+ $("breakTab").classList.toggle("active",mode==="break");
+ $("longTab").classList.toggle("active",mode==="long");
+ document.title=$("clock").textContent+" | FOCUSFLOW";
+}
+update();
+</script>
+</body>
+</html>
